@@ -4,6 +4,8 @@
 /* Import emulator library. */
 #include "peanut_gb.h"
 
+#include <errno.h>
+
 #define RGFW_IMPLEMENTATION
 #define RGFW_BUFFER
 #include "RGFW.h"
