@@ -19,8 +19,6 @@ struct priv_t
 
 	/* RGFW window*/
 	RGFW_window* win;
-	/* width of the screen (and width of draw buffer)*/
-	u32 screenWidth;
 };
 
 /**
@@ -113,7 +111,7 @@ void lcd_draw_line(struct gb_s *gb, const uint8_t pixels[160],
 	const uint32_t palette[] = { 0xFFFFFF, 0xA5A5A5, 0x525252, 0x000000 };
 
 	for(unsigned int x = 0; x < priv->win->r.w; x++) {
-		((uint32_t*)priv->win->buffer)[ (priv->screenWidth * line) + x] = palette[pixels[x] & 3];
+		((uint32_t*)priv->win->buffer)[ (LCD_WIDTH * line) + x] = palette[pixels[x] & 3];
 	}
 }
 #endif
@@ -126,11 +124,8 @@ int main(int argc, char **argv)
 	static struct priv_t priv;
 	enum gb_init_error_e ret;
 
-	priv.win = RGFW_createWindow("RGFW Peanut-gb", RGFW_RECT(0, 0, LCD_WIDTH, LCD_HEIGHT), RGFW_CENTER | RGFW_NO_RESIZE);
-
-	priv.screenWidth = RGFW_getScreenSize().w;
-
-
+	priv.win = RGFW_createWindow("RGFW Peanut-gb", RGFW_RECT(0, 0, LCD_WIDTH, LCD_HEIGHT), RGFW_windowCenter | RGFW_windowNoResize);
+    
 	switch(argc)
 	{
 	case 2:
@@ -166,7 +161,8 @@ int main(int argc, char **argv)
 	// gb.direct.interlace = 1;
 #endif
 
-	priv.win->fpsCap = 60;
+    double startTime = RGFW_getTime(); 
+    u32 frameCount = 0;
 
 	while(RGFW_window_shouldClose(priv.win) == 0) {
 		if (RGFW_window_checkEvent(priv.win)) {
@@ -174,16 +170,16 @@ int main(int argc, char **argv)
 				case RGFW_keyReleased:
 				case RGFW_keyPressed:
 
-					gb.direct.joypad_bits.a	= !RGFW_isPressedI(priv.win, RGFW_z);
-					gb.direct.joypad_bits.b	= !RGFW_isPressedI(priv.win, RGFW_x);
-					gb.direct.joypad_bits.select = !RGFW_isPressedI(priv.win, RGFW_BackSpace);
-					gb.direct.joypad_bits.start	= !RGFW_isPressedI(priv.win, RGFW_Return);
-					gb.direct.joypad_bits.right	= !RGFW_isPressedI(priv.win, RGFW_Right);
-					gb.direct.joypad_bits.left	= !RGFW_isPressedI(priv.win, RGFW_Left);
-					gb.direct.joypad_bits.up	= !RGFW_isPressedI(priv.win, RGFW_Up);
-					gb.direct.joypad_bits.down	= !RGFW_isPressedI(priv.win, RGFW_Down);
+					gb.direct.joypad_bits.a	= !RGFW_isPressed(priv.win, RGFW_z);
+					gb.direct.joypad_bits.b	= !RGFW_isPressed(priv.win, RGFW_x);
+					gb.direct.joypad_bits.select = !RGFW_isPressed(priv.win, RGFW_backSpace);
+					gb.direct.joypad_bits.start	= !RGFW_isPressed(priv.win, RGFW_return);
+					gb.direct.joypad_bits.right	= !RGFW_isPressed(priv.win, RGFW_right);
+					gb.direct.joypad_bits.left	= !RGFW_isPressed(priv.win, RGFW_left);
+					gb.direct.joypad_bits.up	= !RGFW_isPressed(priv.win, RGFW_up);
+					gb.direct.joypad_bits.down	= !RGFW_isPressed(priv.win, RGFW_down);
 
-					switch(priv.win->event.keyCode) {
+					switch(priv.win->event.key) {
 							case RGFW_r:
 								gb_reset(&gb);
 								break;
@@ -207,7 +203,9 @@ int main(int argc, char **argv)
 		gb_run_frame(&gb);
 
 		RGFW_window_swapBuffers(priv.win);
-	}
+        RGFW_checkFPS(startTime, frameCount, 60);        
+        frameCount++;
+    }
 
 	RGFW_window_close(priv.win);
 	free(priv.cart_ram);
